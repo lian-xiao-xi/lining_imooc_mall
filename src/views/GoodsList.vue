@@ -42,9 +42,9 @@
           <div class="accessory-list-wrap">
             <div class="accessory-list col-4">
               <ul>
-                <li>
+                <li v-for="(item,index) in goodsList" :key="index">
                   <div class="pic">
-                    <a href="#"><img src="static/1.jpg" alt=""></a>
+                    <a href="#"><img :src="`/static/${item.productImg}`" alt=""></a>
                   </div>
                   <div class="main">
                     <div class="name">XX</div>
@@ -66,25 +66,46 @@
 </template>
 
 <style >
+
 </style>
 
 <script >
-  import '@/assets/css/base.css'
-  import '@/assets/css/product.css'
-  import NavHeader from '@/components/NavHeader.vue'
-  import NavFooter from '@/components/NavFooter.vue'
-  import NavBread from '@/components/NavBread.vue'
+import "@/assets/css/base.css";
+import "@/assets/css/product.css";
+import NavHeader from "@/components/NavHeader.vue";
+import NavFooter from "@/components/NavFooter.vue";
+import NavBread from "@/components/NavBread.vue";
+import axios from "axios";
 
-  export default {
-		data (){
-			return {
-				msg:'hello Vue!'
-			}
-		},
-    components:{
-		  NavHeader,
-      NavFooter,
-      NavBread
+const ERR_OK = 0;
+
+export default {
+  data() {
+    return {
+      goodsList: []
+    };
+  },
+  components: {
+    NavHeader,
+    NavFooter,
+    NavBread
+  },
+  created() {
+    this.getGoodsList();
+  },
+  methods: {
+    getGoodsList() {
+      axios.get("/api/goods").then(res => {
+        let resData = res.data;
+        if (resData.error === ERR_OK) {
+          this.goodsList = resData.goodsData.result;
+          this.$nextTick(() => {
+
+          });
+          console.log(this.goodsList);
+        }
+      });
     }
-	}
+  }
+};
 </script>

@@ -13,6 +13,15 @@ const portfinder = require('portfinder')
 const HOST = process.env.HOST
 const PORT = process.env.PORT && Number(process.env.PORT)
 
+// ---------------- 模拟mock数据 ------------------ //
+const express = require('express')
+let apiRoutes = express.Router()
+const app = express();
+let appData = require('../mock/goods.json')
+app.use('/api',apiRoutes)
+
+// ---------------- end 模拟mock数据 end ------------------ //
+
 const devWebpackConfig = merge(baseWebpackConfig, {
   module: {
     rules: utils.styleLoaders({ sourceMap: config.dev.cssSourceMap, usePostCSS: true })
@@ -42,7 +51,17 @@ const devWebpackConfig = merge(baseWebpackConfig, {
     quiet: true, // necessary for FriendlyErrorsPlugin
     watchOptions: {
       poll: config.dev.poll,
+    },
+    // ------- 获取模拟的 mock 数据 ------ //
+    before (app) {
+      app.get('/api/goods', function (req, res) {
+        res.json({
+          error:0,
+          goodsData:appData
+        })
+      })
     }
+    // ------- end 获取模拟的 mock 数据 end ------ //
   },
   plugins: [
     new webpack.DefinePlugin({
