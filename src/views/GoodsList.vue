@@ -15,6 +15,7 @@
     <nav-bread>
       <span>Goods</span>
     </nav-bread>
+
     <div class="accessory-result-page accessory-page">
       <div class="container">
         <div class="filter-nav">
@@ -23,16 +24,18 @@
           <a href="javascript:void(0)" class="price">Price 
             <svg class="icon icon-arrow-short"><use xlink:href="#icon-arrow-short"></use></svg>
           </a>
-          <a href="javascript:void(0)" class="filterby stopPop">Filter by</a>
+          <a href="javascript:void(0)" class="filterby stopPop" @click="showFilterPop">Filter by</a>
         </div>
         <div class="accessory-result">
           <!-- filter -->
-          <div class="filter stopPop" id="filter">
+          <div class="filter stopPop" id="filter" :class="{'filterby-show': filterBy}" >
             <dl class="filter-price">
               <dt>Price:</dt>
-              <dd><a href="javascript:void(0)">All</a></dd>
-              <dd>
-                <a href="javascript:void(0)">0 - 100</a>
+              <dd><a href="javascript:void(0)" @click="priceChecked = 'all'" :class="{'cur': priceChecked === 'all'}">All</a></dd>
+              <dd v-for="(price, index) in priceFilter" :key="index" >
+                <a href="javascript:void(0)" @click="setPriceCheck(index)" :class="{'cur': priceChecked === index}">
+                  {{price.startPrice}} - {{price.endPrice}}
+                </a>
               </dd>
 
             </dl>
@@ -44,7 +47,7 @@
               <ul>
                 <li v-for="(item,index) in goodsList" :key="index">
                   <div class="pic">
-                    <a href="#"><img :src="`/static/${item.productImg}`" alt=""></a>
+                    <a href="#"><img v-lazy="`/static/${item.productImg}`" alt=""></a>
                   </div>
                   <div class="main">
                     <div class="name">XX</div>
@@ -54,13 +57,16 @@
                     </div>
                   </div>
                 </li>
-
               </ul>
             </div>
           </div>
+
         </div>
       </div>
     </div>
+
+    <div class="md-overlay" v-show="overLayFlag" @click="closePop"></div>
+
     <nav-footer></nav-footer>
 	</div>
 </template>
@@ -82,7 +88,24 @@ const ERR_OK = 0;
 export default {
   data() {
     return {
-      goodsList: []
+      goodsList: [], // 渲染页面的数据容器
+      priceFilter: [
+        {
+          startPrice: '0.00',
+          endPrice: '500.00'
+        },
+        {
+          startPrice: '500.00',
+          endPrice: '1000.00'
+        },
+        {
+          startPrice: '1000.00',
+          endPrice: '2000.00'
+        }
+      ],
+      priceChecked: 'all', // 价格选中的状态
+      filterBy: false, // 控制小屏（响应式）下价格菜单显示
+      overLayFlag: false // 控制遮罩显示
     };
   },
   components: {
@@ -91,7 +114,9 @@ export default {
     NavBread
   },
   created() {
-    this.getGoodsList();
+    // setTimeout(() => {
+      this.getGoodsList();
+    // }, 5000);
   },
   methods: {
     getGoodsList() {
@@ -105,6 +130,20 @@ export default {
           console.log(this.goodsList);
         }
       });
+    },
+    setPriceCheck(index) {
+      this.priceChecked = index;
+      this.closePop();
+    },
+    showFilterPop() {
+      this.filterBy = true;
+      this.overLayFlag = true;
+      console.log(this.filterBy)
+    },
+    // 关闭遮罩层
+    closePop() {
+      this.filterBy = false;
+      this.overLayFlag = false;
     }
   }
 };
