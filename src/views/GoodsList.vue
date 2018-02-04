@@ -21,7 +21,7 @@
         <div class="filter-nav">
           <span class="sortby">Sort by:</span>
           <a href="javascript:void(0)" class="default cur">Default</a>
-          <a href="javascript:void(0)" class="price">Price 
+          <a href="javascript:void(0)" class="price" @click="sortGoods()">Price 
             <svg class="icon icon-arrow-short"><use xlink:href="#icon-arrow-short"></use></svg>
           </a>
           <a href="javascript:void(0)" class="filterby stopPop" @click="showFilterPop">Filter by</a>
@@ -31,7 +31,7 @@
           <div class="filter stopPop" id="filter" :class="{'filterby-show': filterBy}" >
             <dl class="filter-price">
               <dt>Price:</dt>
-              <dd><a href="javascript:void(0)" @click="priceChecked = 'all'" :class="{'cur': priceChecked === 'all'}">All</a></dd>
+              <dd><a href="javascript:void(0)" @click="setPriceCheck('all')" :class="{'cur': priceChecked === 'all'}">All</a></dd>
               <dd v-for="(price, index) in priceFilter" :key="index" >
                 <a href="javascript:void(0)" @click="setPriceCheck(index)" :class="{'cur': priceChecked === index}">
                   {{price.startPrice}} - {{price.endPrice}}
@@ -47,17 +47,21 @@
               <ul>
                 <li v-for="(item,index) in goodsList" :key="index">
                   <div class="pic">
-                    <a href="#"><img v-lazy="`/static/${item.productImg}`" alt=""></a>
+                    <a href="#"><img v-lazy="`/static/${item.productImage}`" alt="商品图片"></a>
                   </div>
                   <div class="main">
-                    <div class="name">XX</div>
-                    <div class="price">999</div>
+                    <div class="name">{{item.productName}}</div>
+                    <div class="price">{{item.salePrice}}</div>
                     <div class="btn-area">
                       <a href="javascript:;" class="btn btn--m">加入购物车</a>
                     </div>
                   </div>
                 </li>
               </ul>
+              <!-- 滚动加载 -->
+              <div class="loadmore" v-infinite-scroll="loadMore" infinite-scroll-disabled="busy" infinite-scroll-distance="30">
+                <img src="../assets/loading-spinning-bubbles.svg" v-show="loading">
+              </div>
             </div>
           </div>
 
@@ -83,7 +87,8 @@ import NavFooter from "@/components/NavFooter.vue";
 import NavBread from "@/components/NavBread.vue";
 import axios from "axios";
 
-const ERR_OK = 0;
+const RES_OK = '0';
+const RES_ERR = '1';
 
 export default {
   data() {
@@ -92,6 +97,10 @@ export default {
       priceFilter: [
         {
           startPrice: '0.00',
+          endPrice: '100.00'
+        },
+        {
+          startPrice: '100.00',
           endPrice: '500.00'
         },
         {
@@ -104,8 +113,13 @@ export default {
         }
       ],
       priceChecked: 'all', // 价格选中的状态
-      filterBy: false, // 控制小屏（响应式）下价格菜单显示
-      overLayFlag: false // 控制遮罩显示
+      filterBy: false, // 控制小屏（响应式）下价格过滤菜单显示
+      overLayFlag: false, // 控制遮罩显示
+      sortFlag: true, // 控制升降序排序
+      page: 1, // 不滚动页面时只显示1页商品
+      pageSize: 8, // 一页有8个商品
+      busy: true, // 无限滚动禁用
+      loading: false // 滚动加载的loading图标不显示
     };
   },
   components: {
@@ -114,36 +128,81 @@ export default {
     NavBread
   },
   created() {
-    // setTimeout(() => {
-      this.getGoodsList();
-    // }, 5000);
+    this.getGoodsList();
   },
   methods: {
-    getGoodsList() {
-      axios.get("/api/goods").then(res => {
+    // 使用axios从后端获取数据
+    getGoodsList(flag) {
+      let params = {
+        page: this.page,
+        pageSize: this.pageSize,
+        sort: this.sortFlag ? 1 : -1,
+        priceLevel: this.priceChecked
+      };
+
+      this.loading = true;
+      axios.get("/goods", {
+        params: params
+      }).then(res => {
         let resData = res.data;
-        if (resData.error === ERR_OK) {
-          this.goodsList = resData.goodsData.result;
+        if (resData.status === RES_OK) {
+          if(flag) { // 累加
+            this.goodsList = this.goodsList.concat(resData.result.list)
+
+            if(resData.result.count === 0) {
+              this.busy = true; //没数据时禁止滚动到底部自动请求
+            } else {
+              this.busy = false;
+            }
+          } else { // 不累加
+            this.goodsList = resData.result.list;
+            this.busy = false; // 首次请求成功后开启
+          }
+          
           this.$nextTick(() => {
 
           });
-          console.log(this.goodsList);
+
+          console.log('goodsList',this.goodsList);
+        } else {
+          this.goodsList = []
         }
+        this.loading = false;
       });
+      
     },
+    // 高亮显示价格过滤区间
     setPriceCheck(index) {
       this.priceChecked = index;
       this.closePop();
+      this.page = 1;
+      this.getGoodsList();
     },
+    // 打开遮罩层
     showFilterPop() {
       this.filterBy = true;
       this.overLayFlag = true;
-      console.log(this.filterBy)
     },
     // 关闭遮罩层
     closePop() {
       this.filterBy = false;
       this.overLayFlag = false;
+    },
+    // 将商品列表排序展示
+    sortGoods() {
+      console.log('排序')
+      this.sortFlag = !this.sortFlag;
+      this.page = 1;
+      this.getGoodsList();
+    },
+    loadMore() {
+      console.log('滚动加载')
+      this.busy = true;
+      //第一请求完成后才会执行第二个请求，防止鼠标滚动时请求过多
+      setTimeout(() => {
+        this.page++;
+        this.getGoodsList(true);
+      }, 600)
     }
   }
 };
