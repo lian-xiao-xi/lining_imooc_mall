@@ -10,15 +10,15 @@
     <div class="navbar">
       <div class="navbar-left-container">
         <a href="/">
-          <img class="navbar-brand-logo" src="static/logo.png"></a>
+          <img class="navbar-brand-logo" src="/static/logo.png"></a>
       </div>
       <div class="navbar-right-container" style="display: flex;">
         <div class="navbar-menu-container">
           <!--<a href="/" class="navbar-link">我的账户</a>-->
           <span class="navbar-link"></span>
-          <span></span>
+          <span v-if="nickName">{{nickName}}</span>
           <a href="javascript:void(0)" class="navbar-link" @click="loginModalFlag=true" v-if="!nickName">Login</a>
-          <a href="javascript:void(0)" class="navbar-link" v-if="nickName">Logout</a>
+          <a href="javascript:void(0)" class="navbar-link" @click="logOut" v-if="nickName">Logout</a>
           <div class="navbar-cart-container">
             <span class="navbar-cart-count"></span>
             <a class="navbar-link navbar-cart-link" href="/#/cart">
@@ -30,8 +30,8 @@
         </div>
       </div>
     </div>
-      <!--下面是登录弹框-->
-    <!-- <div class="md-modal modal-msg md-modal-transition " v-bind:class="{'md-show':loginModalFlag}">
+    <!--下面是登录弹框-->
+    <div class="md-modal modal-msg md-modal-transition" :class="{'md-show':loginModalFlag}">
       <div class="md-modal-inner">
         <div class="md-top">
           <div class="md-title">Login in</div>
@@ -58,21 +58,76 @@
           </div>
         </div>
       </div>
-    </div> -->
-    <!-- <div class="md-overlay"></div> -->
+    </div>
+    <!-- 遮罩层 -->
+    <div class="md-overlay" v-show="loginModalFlag" @click="loginModalFlag=false"></div>
   </header>
 </template>
 
 
 <script>
+  // import "@/assets/css/base.css";
   import '@/assets/css/login.css'
+  import {constant} from "@/assets/js/constant.js"
   import axios from 'axios'
   import { mapState } from 'vuex'
   export default{
     data() {
       return {
+        userName: '',
+        userPwd: '',
+        errorTip: false,
         loginModalFlag: false, // 遮罩层开关
         nickName: ''
+      }
+    },
+    mounted() {
+      // 登录校验
+      this.checkLogin();
+    },
+    methods: {
+      checkLogin() {
+        axios.get('/users/checkLogin').then( (response) => {
+          let res = response.data;
+          if(res.status === constant.RES_OK) {
+            this.nickName = res.result;
+          }
+        })
+      },
+      login() {
+        // 如果账号或密码有一个未填写
+        if(!this.userName || !this.userPwd) {
+          this.errorTip = true;
+          return;
+        }
+        // console.log('post请求已发出')
+        axios.post('/users/login', {
+          userName: this.userName,
+          userPwd: this.userPwd
+        }).then((response) => {
+          // console.log('接收到服务端请求')
+          let res = response.data;
+          if(res.status === constant.RES_OK) {
+            console.log('账号密码正确')
+            this.errorTip = false;
+            this.loginModalFlag = false;
+            this.nickName = res.result.userName;
+          } else {
+            console.log('密码错误')
+            this.errorTip = true;
+          }
+          
+        })
+      },
+      logOut() {
+        
+        axios.post('/users/logout').then((response) => {
+          let res = response.data;
+          if(res.status === constant.RES_OK) {
+            this.nickName = '';
+          }
+        })
+
       }
     }
   }
@@ -148,4 +203,255 @@
     height: 25px;
     transform: scaleX(-1);
   }
+
+  /* 登录弹出框 */
+  .md-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 535px;
+  height: auto;
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  visibility: hidden;
+  z-index: 201;
+}
+
+.md-modal.md-modal-m {
+  width: 620px;
+}
+
+.md-modal .md-close {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 34px;
+  height: 34px;
+  -webkit-transform: scale(0.5);
+  -ms-transform: scale(0.5);
+  transform: scale(0.5);
+  text-indent: -8000px;
+}
+
+.md-modal .md-close:before, .md-modal .md-close:after {
+  position: absolute;
+  top: 16px;
+  left: -4px;
+  content: "";
+  width: 44px;
+  height: 3px;
+  background: #d7d8dd;
+  -webkit-transition: -webkit-transform .5s ease-out;
+  transition: -webkit-transform .5s ease-out;
+  transition: transform .5s ease-out;
+  transition: transform .5s ease-out, -webkit-transform .5s ease-out;
+}
+
+.md-modal .md-close:before {
+  -webkit-transform: rotate(-45deg);
+  -ms-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+}
+
+.md-modal .md-close:after {
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.md-modal .md-close:hover:before, .md-modal .md-close:hover:after {
+  -webkit-transition: -webkit-transform .3s ease-out;
+  transition: -webkit-transform .3s ease-out;
+  transition: transform .3s ease-out;
+  transition: transform .3s ease-out, -webkit-transform .3s ease-out;
+}
+
+.md-modal .md-close:hover:before {
+  -webkit-transform: rotate(-135deg);
+  -ms-transform: rotate(-135deg);
+  transform: rotate(-135deg);
+}
+
+.md-modal .md-close:hover:after {
+  -webkit-transform: rotate(-45deg);
+  -ms-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+}
+
+.md-modal .md-tit {
+  font-weight: 200;
+  line-height: 1.8em;
+  text-align: center;
+}
+
+.md-modal .md-modal-inner {
+  padding: 60px 50px;
+}
+
+.md-modal .btn-wrap {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0;
+}
+
+.md-modal .btn-wrap .btn {
+  width: 45%;
+  min-width: 80px;
+  margin: 0 2.5%;
+}
+
+.md-modal .confirm-tips, .md-modal .alert-tips {
+  font-size: 14px;
+  font-weight: 200;
+  text-align: center;
+}
+
+.md-modal .confirm-tips p, .md-modal .alert-tips p {
+  line-height: 1.8em;
+}
+
+.md-modal .confirm-tips {
+  min-height: 5.65em;
+}
+
+.md-modal .alert-tips {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  height: 10.25em;
+  -ms-flex-align: center;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
+.md-modal .alert-tips p {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  -ms-flex: 1;
+  flex: 1;
+}
+
+.md-modal.modal-normal .content-tit {
+  margin-bottom: 20px;
+  line-height: 20px;
+  font-size: 16px;
+  color: #333;
+}
+
+.md-modal .icon-status-ok {
+  width: 20px;
+  height: 20px;
+  fill: #ee7a23;
+  vertical-align: middle;
+  margin-right: 15px;
+}
+
+.md-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+}
+
+.md-modal-transition .md-modal-inner {
+  background: #fff;
+  -webkit-transform: translateY(20%);
+  -ms-transform: translateY(20%);
+  transform: translateY(20%);
+  opacity: 0;
+  -webkit-transition: all .3s ease-out;
+  transition: all .3s ease-out;
+}
+
+.md-modal-transition.md-show {
+  visibility: visible;
+}
+
+.md-modal-transition.md-show .md-modal-inner {
+  -webkit-transform: translateY(0);
+  -ms-transform: translateY(0);
+  transform: translateY(0);
+  opacity: 1;
+  -webkit-transition: all .5s ease-out;
+  transition: all .5s ease-out;
+}
+
+@media only screen and (max-width: 767px) {
+  .md-modal {
+    width: 300px !important;
+  }
+
+  .md-modal.md-modal-fun .md-content {
+    padding-top: 30px;
+  }
+
+  .md-modal .md-close {
+    display: none;
+  }
+
+  .md-modal .md-tit {
+    padding: 0 15px;
+  }
+
+  .md-modal .md-modal-inner {
+    padding: 0 !important;
+  }
+
+  .md-modal .confirm-tips, .md-modal .alert-tips {
+    padding: 30px 10px;
+  }
+
+  .md-modal .confirm-tips {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    min-height: 90px;
+    -ms-flex-align: center;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+  }
+
+  .md-modal .confirm-tips p {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+  }
+
+  .md-modal .btn-wrap {
+    display: -ms-flex;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    margin-top: 0;
+  }
+
+  .md-modal .btn-wrap .btn {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    width: 100%;
+    margin: 0;
+    font-size: 12px;
+  }
+
+  .md-modal .btn-wrap .btn:first-child {
+    border-left: none;
+    border-right: none;
+  }
+
+  .md-modal.modal-normal .content-tit {
+    font-size: 12px;
+  }
+}
 </style>

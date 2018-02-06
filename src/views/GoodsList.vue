@@ -53,7 +53,7 @@
                     <div class="name">{{item.productName}}</div>
                     <div class="price">{{item.salePrice}}</div>
                     <div class="btn-area">
-                      <a href="javascript:;" class="btn btn--m">加入购物车</a>
+                      <a href="javascript:;" class="btn btn--m" @click="addCart(item.productId)">加入购物车</a>
                     </div>
                   </div>
                 </li>
@@ -82,13 +82,11 @@
 <script >
 import "@/assets/css/base.css";
 import "@/assets/css/product.css";
+import {constant} from "@/assets/js/constant.js"
 import NavHeader from "@/components/NavHeader.vue";
 import NavFooter from "@/components/NavFooter.vue";
 import NavBread from "@/components/NavBread.vue";
 import axios from "axios";
-
-const RES_OK = '0';
-const RES_ERR = '1';
 
 export default {
   data() {
@@ -141,11 +139,11 @@ export default {
       };
 
       this.loading = true;
-      axios.get("/goods", {
+      axios.get("/goods/list", {
         params: params
       }).then(res => {
         let resData = res.data;
-        if (resData.status === RES_OK) {
+        if (resData.status === constant.RES_OK) {
           if(flag) { // 累加
             this.goodsList = this.goodsList.concat(resData.result.list)
 
@@ -203,6 +201,19 @@ export default {
         this.page++;
         this.getGoodsList(true);
       }, 600)
+    },
+    // 添加商品到购物车
+    addCart(productId) {
+      console.log(productId)
+      axios.post('/goods/addCart', {
+        productId: productId
+      }).then((res) => {
+        if(res.status === constant.RES_OK) {
+          alert('加入购物车成功')
+        } else{
+          alert(`msg: ${res.data.msg}`)
+        }
+      })
     }
   }
 };

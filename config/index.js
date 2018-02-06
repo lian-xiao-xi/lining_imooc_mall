@@ -14,7 +14,16 @@ module.exports = {
         // 设置代理
         '/goods': {
             target: 'http://localhost:3000'
-        }
+        },
+        // '/goods/*': {
+        //     target: 'http://localhost:3000'
+        // },
+        '/users': {
+          target: 'http://localhost:3000'  
+        },
+        // '/users/*': {
+        //   target: 'http://localhost:3000'
+        // },
     },
 
     // Various Dev Server settings
