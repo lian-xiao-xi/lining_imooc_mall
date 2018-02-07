@@ -100,19 +100,22 @@
           this.errorTip = true;
           return;
         }
-        // console.log('post请求已发出')
+        
         axios.post('/users/login', {
           userName: this.userName,
           userPwd: this.userPwd
         }).then((response) => {
-          // console.log('接收到服务端请求')
           let res = response.data;
           if(res.status === constant.RES_OK) {
+            // 账号密码正确
             console.log('账号密码正确')
             this.errorTip = false;
             this.loginModalFlag = false;
             this.nickName = res.result.userName;
+            // 如果是 /cart 用户购物车页面，登录之后就获取数据
+            this.$emit('getData')
           } else {
+            // // 账号密码错误
             console.log('密码错误')
             this.errorTip = true;
           }
