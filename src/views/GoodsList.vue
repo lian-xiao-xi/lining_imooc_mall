@@ -18,16 +18,19 @@
 
     <div class="accessory-result-page accessory-page">
       <div class="container">
+        <!-- sort 升降序排列选择 -->
         <div class="filter-nav">
           <span class="sortby">Sort by:</span>
           <a href="javascript:void(0)" class="default cur">Default</a>
-          <a href="javascript:void(0)" class="price" @click="sortGoods()">Price 
+          <a href="javascript:void(0)" class="price" :class="{'sort-up': !sortFlag}" @click="sortGoods()">
+            Price 
             <svg class="icon icon-arrow-short"><use xlink:href="#icon-arrow-short"></use></svg>
           </a>
           <a href="javascript:void(0)" class="filterby stopPop" @click="showFilterPop">Filter by</a>
         </div>
+
         <div class="accessory-result">
-          <!-- filter -->
+          <!-- filter 价格过滤区间 -->
           <div class="filter stopPop" id="filter" :class="{'filterby-show': filterBy}" >
             <dl class="filter-price">
               <dt>Price:</dt>
@@ -41,7 +44,7 @@
             </dl>
           </div>
 
-          <!-- search result accessories list -->
+          <!-- 商品展示 -->
           <div class="accessory-list-wrap">
             <div class="accessory-list col-4">
               <ul>
@@ -65,6 +68,26 @@
             </div>
           </div>
 
+          <!-- modal组件 您尚未登录 弹出框 -->
+          <modal :mdShow="mdShowLogin" @close="closeLoginModal" class="login-modal">
+            <p slot="message">您当前尚未登录！</p>
+            <div slot="btnGroup">
+              <a @click="closeLoginModal" href="javascript:;" class="btn btn--m">关闭</a>
+            </div>
+          </modal>
+
+          <!-- modal组件 加入购物车成功 弹出框 -->
+          <modal :mdShow="mdShowAddcart" @close="closeAddcartModal" class="addcart-modal">
+            <p slot="message">
+              <svg class="icon icon-status-ok"><use xlink:href="#icon-status-ok"></use></svg>
+              <span>加入购物车成功！</span>
+            </p>
+            <div slot="btnGroup">
+              <a href="javascript:;" class="btn btn--m" @click="closeAddcartModal">继续购物</a>
+              <router-link to="/cart" class="btn btn--m btn--red">查看购物车</router-link>
+            </div>
+          </modal>
+
         </div>
       </div>
     </div>
@@ -82,10 +105,11 @@
 <script >
 import "@/assets/css/base.css";
 import "@/assets/css/product.css";
-import {constant} from "@/assets/js/constant.js"
+import { constant } from "@/assets/js/constant.js";
 import NavHeader from "@/components/NavHeader.vue";
 import NavFooter from "@/components/NavFooter.vue";
 import NavBread from "@/components/NavBread.vue";
+import Modal from "@/components/Modal.vue";
 import axios from "axios";
 
 export default {
@@ -94,36 +118,39 @@ export default {
       goodsList: [], // 渲染页面的数据容器
       priceFilter: [
         {
-          startPrice: '0.00',
-          endPrice: '100.00'
+          startPrice: "0.00",
+          endPrice: "100.00"
         },
         {
-          startPrice: '100.00',
-          endPrice: '500.00'
+          startPrice: "100.00",
+          endPrice: "500.00"
         },
         {
-          startPrice: '500.00',
-          endPrice: '1000.00'
+          startPrice: "500.00",
+          endPrice: "1000.00"
         },
         {
-          startPrice: '1000.00',
-          endPrice: '2000.00'
+          startPrice: "1000.00",
+          endPrice: "2000.00"
         }
       ],
-      priceChecked: 'all', // 价格选中的状态
+      priceChecked: "all", // 价格选中的状态
       filterBy: false, // 控制小屏（响应式）下价格过滤菜单显示
-      overLayFlag: false, // 控制遮罩显示
-      sortFlag: true, // 控制升降序排序
+      overLayFlag: false, // 控制小屏（响应式）下价格过滤区间菜单的遮罩层显示
+      sortFlag: true, // 默认为降序排序
       page: 1, // 不滚动页面时只显示1页商品
       pageSize: 8, // 一页有8个商品
       busy: true, // 无限滚动禁用
-      loading: false // 滚动加载的loading图标不显示
+      loading: false, // 滚动加载的loading图标不显示
+      mdShowLogin: false,
+      mdShowAddcart: false
     };
   },
   components: {
     NavHeader,
     NavFooter,
-    NavBread
+    NavBread,
+    Modal
   },
   created() {
     this.getGoodsList();
@@ -139,35 +166,36 @@ export default {
       };
 
       this.loading = true;
-      axios.get("/goods/list", {
-        params: params
-      }).then(res => {
-        let resData = res.data;
-        if (resData.status === constant.RES_OK) {
-          if(flag) { // 累加
-            this.goodsList = this.goodsList.concat(resData.result.list)
+      axios
+        .get("/goods/list", {
+          params: params
+        })
+        .then(res => {
+          let resData = res.data;
+          if (resData.status === constant.RES_OK) {
+            if (flag) {
+              // 累加
+              this.goodsList = this.goodsList.concat(resData.result.list);
 
-            if(resData.result.count === 0) {
-              this.busy = true; //没数据时禁止滚动到底部自动请求
+              if (resData.result.count === 0) {
+                this.busy = true; //没数据时禁止滚动到底部自动请求
+              } else {
+                this.busy = false;
+              }
             } else {
-              this.busy = false;
+              // 不累加
+              this.goodsList = resData.result.list;
+              this.busy = false; // 首次请求成功后开启
             }
-          } else { // 不累加
-            this.goodsList = resData.result.list;
-            this.busy = false; // 首次请求成功后开启
+
+            this.$nextTick(() => {});
+
+            console.log("goodsList", this.goodsList);
+          } else {
+            this.goodsList = [];
           }
-          
-          this.$nextTick(() => {
-
-          });
-
-          console.log('goodsList',this.goodsList);
-        } else {
-          this.goodsList = []
-        }
-        this.loading = false;
-      });
-      
+          this.loading = false;
+        });
     },
     // 高亮显示价格过滤区间
     setPriceCheck(index) {
@@ -176,44 +204,57 @@ export default {
       this.page = 1;
       this.getGoodsList();
     },
-    // 打开遮罩层
+    // 打开小屏（响应式）下filter by 价格过滤区间菜单以及遮罩层
     showFilterPop() {
       this.filterBy = true;
       this.overLayFlag = true;
     },
-    // 关闭遮罩层
+    // 关闭小屏（响应式）下filter by 价格过滤区间菜单以及遮罩层
     closePop() {
       this.filterBy = false;
       this.overLayFlag = false;
     },
     // 将商品列表排序展示
     sortGoods() {
-      console.log('排序')
+      console.log("排序");
       this.sortFlag = !this.sortFlag;
       this.page = 1;
       this.getGoodsList();
     },
+    // 无限滚动加载
     loadMore() {
-      console.log('滚动加载')
+      console.log("滚动加载");
       this.busy = true;
       //第一请求完成后才会执行第二个请求，防止鼠标滚动时请求过多
       setTimeout(() => {
         this.page++;
         this.getGoodsList(true);
-      }, 600)
+      }, 600);
     },
     // 添加商品到购物车
     addCart(productId) {
-      console.log(productId)
-      axios.post('/goods/addCart', {
-        productId: productId
-      }).then((res) => {
-        if(res.status === constant.RES_OK) {
-          alert('加入购物车成功')
-        } else{
-          alert(`msg: ${res.data.msg}`)
-        }
-      })
+      console.log(productId);
+      axios
+        .post("/goods/addCart", {
+          productId: productId
+        })
+        .then(response => {
+          let res = response.data;
+          if (res.status === constant.RES_OK) {
+            console.log('')
+            this.mdShowAddcart = true;
+          } else {
+            this.mdShowLogin = true;
+          }
+        });
+    },
+    // 关闭 您尚未登录 弹窗
+    closeLoginModal() {
+      this.mdShowLogin = false;
+    },
+    // 关闭 加入购物车成功 弹窗
+    closeAddcartModal() {
+      this.mdShowAddcart = false;
     }
   }
 };

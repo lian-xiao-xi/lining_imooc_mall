@@ -15,15 +15,15 @@ module.exports = {
         '/goods': {
             target: 'http://localhost:3000'
         },
-        // '/goods/*': {
-        //     target: 'http://localhost:3000'
-        // },
+        '/goods/*': {
+            target: 'http://localhost:3000'
+        },
         '/users': {
           target: 'http://localhost:3000'  
         },
-        // '/users/*': {
-        //   target: 'http://localhost:3000'
-        // },
+        '/users/*': {
+          target: 'http://localhost:3000'
+        },
     },
 
     // Various Dev Server settings
