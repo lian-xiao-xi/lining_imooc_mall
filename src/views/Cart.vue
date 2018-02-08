@@ -67,14 +67,14 @@
               <li v-for="(item,index) in cartList">
                 <div class="cart-tab-1">
                   <div class="cart-item-check">
-                    <a href="javascipt:;" class="checkbox-btn item-check-btn">
+                    <a href="javascipt:;" class="checkbox-btn item-check-btn" :class="{'check': item.checked === '1'}" @click="editCart('checked',item)">
                       <svg class="icon icon-ok">
                         <use xlink:href="#icon-ok"></use>
                       </svg>
                     </a>
                   </div>
                   <div class="cart-item-pic">
-                    <img :src="'static/'+item.productImage" alt="item.productName">
+                    <img :src="'static/'+item.productImage" :alt="item.productName">
                   </div>
                   <div class="cart-item-title">
                     <div class="item-name">{{item.productName}}</div>
@@ -87,9 +87,9 @@
                   <div class="item-quantity">
                     <div class="select-self select-self-open">
                       <div class="select-self-area">
-                        <a class="input-sub">-</a>
+                        <a class="input-sub" @click="editCart('minu',item)">-</a>
                         <span class="select-ipt">{{item.productNum}}</span>
-                        <a class="input-add">+</a>
+                        <a class="input-add" @click="editCart('add',item)">+</a>
                       </div>
                     </div>
                   </div>
@@ -117,7 +117,7 @@
             <div class="cart-foot-l">
               <div class="item-all-check">
                 <a href="javascipt:;">
-                  <span class="checkbox-btn item-check-btn">
+                  <span class="checkbox-btn item-check-btn" >
                       <svg class="icon icon-ok"><use xlink:href="#icon-ok"/></svg>
                   </span>
                   <span>Select all</span>
@@ -144,7 +144,7 @@
       </p>
       <div slot="btnGroup">
         <a class="btn btn--m" href="javascript:;" @click="delCart">确认</a>
-        <a class="btn btn--m" href="javascript:;" @click="modalCofirm = false">关闭</a>
+        <a class="btn btn--m" href="javascript:;" @click="closeModal">关闭</a>
       </div>
     </Modal>
 
@@ -160,6 +160,7 @@
   import NavFooter from '@/components/NavFooter.vue'
   import NavBread from '@/components/NavBread.vue'
   import Modal from '@/components/Modal.vue'
+  import { constant } from "@/assets/js/constant.js";
   import axios from 'axios'
 
   export default{
@@ -167,7 +168,7 @@
       return {
         cartList: [],  //购物车列表
         modalCofirm: false, //删除提示的模态框是否隐藏
-        productId: '' //记录将要删除的产品ID
+        delProductId: '' //记录将要删除的产品ID
       }
     },
     components: {
@@ -182,29 +183,61 @@
     methods:{
       init(){
         axios.get("/users/cartList").then((response) => {
+          // 未登录状态下，此请求会被拦截
           let res = response.data;
-          this.cartList = res.result;
+          if(res.status === constant.RES_OK) {
+            this.cartList = res.result;  
+          }
+          
         });
       },
-      closeModal () {   //关闭模态框
+      // 关闭模态框
+      closeModal () { 
         this.modalCofirm = false;
       },
-      delCartConfirm (productId){   //点击删除弹框的方法
+      delCartConfirm (productId){   //点击删除弹框
         this.modalCofirm = true; //显示删除模态框
-        this.productId = productId;
+        this.delProductId = productId;
       },
-      delCart(){    //删除商品
+      delCart(){    // 删除数据库中的商品信息
         axios.post("/users/cartDel",{
-          productId:this.productId
+          productId:this.delProductId
         }).then((response)=>{
           let res = response.data;
-          if(res.status == '0'){
+          if(res.status === constant.RES_OK){
             this.modalCofirm = false;
             // var delCount = this.delItem.productNum;
             // this.$store.commit("updateCartCount",-delCount);
-            this.init();
+
+            // this.init();
+            // 删除 cartList 数据中被删除的商品元素
+            this.cartList.forEach((item, index) => {
+              if(item.productId === this.delProductId) {
+                this.cartList.splice(index, 1);
+              }
+            })
           }
         });
+      },
+      editCart(flag, item) {
+        
+        if(flag === 'add') {
+          item.productNum++
+        } else if(flag === 'minu') {
+          if(item.productNum <= 1) {
+            return;
+          }
+          item.productNum--
+        } else if(flag === 'checked') {
+          item.checked = item.checked === '1' ? '0' : '1';
+        }
+        axios.post('/users/cartEdit', {
+          productId: item.productId,
+          productNum: item.productNum,
+          checked: item.checked
+        }).then((response) => {
+          let res = response.data;
+        })
       }
     }
   }
