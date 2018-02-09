@@ -14,6 +14,11 @@ Vue.use(infiniteScroll);
 
 Vue.config.productionTip = false
 
+// 货币过滤器
+import {currency} from "@/assets/js/currency.js"
+Vue.filter('currency', currency)
+
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',
