@@ -129,7 +129,7 @@
                 Item total: <span class="total-price">{{totalPrice | currency('￥')}}</span>
               </div>
               <div class="btn-wrap">
-                <a class="btn btn--red">Checkout</a>
+                <a :class="{'btn--dis':checkedCount===0}" class="btn btn--red" @click="checkOut()">Checkout</a>
               </div>
             </div>
           </div>
@@ -242,7 +242,6 @@
         })
       },
       toggleCheckAll() {
-        // this.checkAllFlag = !this.checkAllFlag;
 
         if(this.cartList.length>0) {
 
@@ -261,9 +260,17 @@
         })
         }
 
+      },
+      // 结账
+      checkOut() {
+        if(this.checkedCount < 1) return;
+        this.$router.push({
+          path: '/address'
+        })
       }
     },
     computed: {
+      // 是否全选
       checkAllFlag() {
 
       if(this.cartList.length === 0) {
@@ -272,10 +279,20 @@
       if(this.cartList.length>0) {
         return this.cartList.every((item, index) => {
           return item.checked === '1';
-        })
-        
+        })      
       }
       },
+      // 获取已勾选的商品种数(几种商品已勾选)
+      checkedCount() {
+        let i = 0;
+        this.cartList.forEach((item, index) => {
+          if(item.checked === '1') {
+            i++;
+          }
+        });
+        return i;
+      },
+      // 选中的商品的总价格
       totalPrice() {
         let money = 0;
         this.cartList.forEach((item, index) => {
@@ -286,13 +303,16 @@
         return money;
       }
     }
-    // filters: {
+    // filters: { // 定义局部过滤器
     //   currency: currency
     // }
   }
 </script>
 
 <style scoped>
+div {
+  color: inherit;
+}
   .input-sub,.input-add{
     min-width: 40px;
     height: 100%;
