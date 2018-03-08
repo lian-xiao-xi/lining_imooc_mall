@@ -103,9 +103,6 @@
 </style>
 
 <script >
-import "@/assets/css/base.css";
-import "@/assets/css/product.css";
-import { constant } from "@/assets/js/constant.js";
 import NavHeader from "@/components/NavHeader.vue";
 import NavFooter from "@/components/NavFooter.vue";
 import NavBread from "@/components/NavBread.vue";
@@ -172,7 +169,7 @@ export default {
         })
         .then(res => {
           let resData = res.data;
-          if (resData.status === constant.RES_OK) {
+          if (resData.status === '0') {
             if (flag) {
               // 累加
               this.goodsList = this.goodsList.concat(resData.result.list);
@@ -233,16 +230,14 @@ export default {
     },
     // 添加商品到购物车
     addCart(productId) {
-      console.log(productId);
-      axios
-        .post("/goods/addCart", {
+      // console.log(productId);
+      axios.post("/goods/addCart", {
           productId: productId
-        })
-        .then(response => {
+        }).then(response => {
           let res = response.data;
-          if (res.status === constant.RES_OK) {
-            console.log('')
+          if (res.status === '0') {
             this.mdShowAddcart = true;
+            this.$store.commit('updateCartCount', 1);
           } else {
             this.mdShowLogin = true;
           }

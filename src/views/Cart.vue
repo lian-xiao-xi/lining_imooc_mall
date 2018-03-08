@@ -99,7 +99,7 @@
                 </div>
                 <div class="cart-tab-5">
                   <div class="cart-item-opration">
-                    <a href="javascript:;" class="item-edit-btn" @click="delCartConfirm(item.productId)">
+                    <a href="javascript:;" class="item-edit-btn" @click="delCartConfirm(item)">
                       <svg class="icon icon-del">
                         <use xlink:href="#icon-del"></use>
                       </svg>
@@ -153,15 +153,11 @@
 </template>
 
 <script>
-  import '@/assets/css/checkout.css'
-  import '@/assets/css/base.css'
-  import '@/assets/css/product.css'
   import NavHeader from '@/components/NavHeader.vue'
   import NavFooter from '@/components/NavFooter.vue'
   import NavBread from '@/components/NavBread.vue'
   import Modal from '@/components/Modal.vue'
-  import { constant } from "@/assets/js/constant.js";
-  // import {currency} from "@/assets/js/currency.js"
+  // import { constant } from "@/assets/js/constant.js";
   import axios from 'axios'
 
   export default{
@@ -169,7 +165,7 @@
       return {
         cartList: [],  //购物车列表
         modalCofirm: false, //删除提示的模态框是否隐藏
-        delProductId: '' //记录将要删除的产品ID
+        delItem: {} // 要删除的商品
         // checkAllFlag: false
       }
     },
@@ -185,10 +181,13 @@
     methods:{
       init(){
         axios.get("/users/cartList").then((response) => {
-          // 未登录状态下，此请求会被拦截
           let res = response.data;
-          if(res.status === constant.RES_OK) {
+          if(res.status === '0') {
             this.cartList = res.result;  
+          }
+          // 未登录状态下，跳转到首页
+          if(res.status === '10001') {
+            this.$router.push('/')
           }
           
         });
@@ -197,24 +196,25 @@
       closeModal () { 
         this.modalCofirm = false;
       },
-      delCartConfirm (productId){   //点击删除弹框
+      delCartConfirm (item){   //点击删除弹框
         this.modalCofirm = true; //显示删除模态框
-        this.delProductId = productId;
+        this.delItem = item;
+        console.log(this.delItem)
       },
       delCart(){    // 删除数据库中的商品信息
         axios.post("/users/cartDel",{
-          productId:this.delProductId
+          productId:this.delItem.productId
         }).then((response)=>{
           let res = response.data;
-          if(res.status === constant.RES_OK){
+          if(res.status === '0'){
             this.modalCofirm = false;
-            // var delCount = this.delItem.productNum;
-            // this.$store.commit("updateCartCount",-delCount);
+            var delCount = this.delItem.productNum;
+            this.$store.commit("updateCartCount",-delCount);
 
             // this.init();
             // 删除 cartList 数据中被删除的商品元素
             this.cartList.forEach((item, index) => {
-              if(item.productId === this.delProductId) {
+              if(item.productId === this.delItem.productId) {
                 this.cartList.splice(index, 1);
               }
             })
@@ -239,6 +239,17 @@
           checked: item.checked
         }).then((response) => {
           let res = response.data;
+          if(res.status === '0') {
+            console.log('editCart success')
+          }
+
+          let num = 0;
+          if(flag === 'add') {
+            num = 1;
+          } else if(flag === 'minu') {
+            num = -1;
+          }
+          this.$store.commit("updateCartCount", num);
         })
       },
       toggleCheckAll() {
@@ -254,8 +265,8 @@
           checkAll: this.checkAllFlag
         }).then((response) => {
           let res = response.data;
-          if(true) {
-            console.log('')
+          if(res.status === '0') {
+            console.log('toggleCheckAll success')
           }
         })
         }
@@ -303,9 +314,6 @@
         return money;
       }
     }
-    // filters: { // 定义局部过滤器
-    //   currency: currency
-    // }
   }
 </script>
 

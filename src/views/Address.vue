@@ -65,7 +65,7 @@
             <div class="addr-list-wrap">
               <div class="addr-list">
                 <ul>
-                  <li v-for="(item,index) in addressListFilter" v-bind:class="{'check':checkIndex === index}" @click="checkIndex=index;selectedAddrId=item.addressId">
+                  <li v-for="(item,index) in addressListFilter" v-bind:class="{'check':checkIndex === index}" @click="addressItemClick(item, index)">
                     <dl>
                       <dt>{{item.userName}}</dt>
                       <dd class="address">{{item.streetName}}</dd>
@@ -125,7 +125,7 @@
             </div>
             <div class="next-btn-wrap">
               <!-- a标签跳转 -->
-              <router-link class="btn btn--m btn--red" v-bind:to="{path:'/orderConfirm',query:{'addressId':selectedAddrId}}">Next</router-link>
+              <router-link class="btn btn--m btn--red" :to="{path:'/orderConfirm',query:{'addressId':selectedAddrId}}">Next</router-link>
             </div>
           </div>
         </div>
@@ -150,9 +150,8 @@
   import NavFooter from '@/components/NavFooter.vue'
   import NavBread from '@/components/NavBread.vue'
   import Modal from '@/components/Modal.vue'
-  import { constant } from "@/assets/js/constant.js";
+  // import { constant } from "@/assets/js/constant.js";
   import axios from 'axios'
-	import {currency} from '@/assets/js/currency.js'  // 对价格格式化的通用方法
 
 	const ADDRESS_LIMIT = 3;
 	export default {
@@ -162,8 +161,8 @@
           limit:ADDRESS_LIMIT,   // 限制默认显示3个地址
           checkIndex:0,   // 选中的地址索引
           isMdShow:false,   // 模态框的显示设置
-          addressId:'',     // 地址id的存储，用于请求传参
-          selectedAddrId:''  // 选中的地址id存储,用于点击Next跳转到订单确认页面传参
+          addressId:''     // 删除的地址id的存储，用于请求传参
+          // selectedAddrId:''  // 选中的地址id存储,用于点击Next跳转到订单确认页面传参
         }
     },
     components:{
@@ -178,6 +177,15 @@
     computed:{
       addressListFilter(){
         return this.addressList.slice(0,this.limit);
+      },
+      selectedAddrId() {
+        let selected;
+        this.addressList.forEach((item, index) => {
+          if(this.checkIndex === index) {
+            selected = item.addressId;
+          }
+        })
+        return selected;
       }
     },
     methods:{
@@ -187,6 +195,12 @@
           this.addressList = res.result;
         })
       },
+      // 点击切换地址
+      addressItemClick(item, index) {
+      	this.checkIndex=index;
+      	console.log(this.selectedAddrId)
+      	
+      },
       expand(){  //  点击more更多
         if(this.limit === ADDRESS_LIMIT){
           this.limit = this.addressList.length;
@@ -194,7 +208,7 @@
           this.limit = ADDRESS_LIMIT;
         }
       },
-      setDefault(item,addressId){  // 设置默认地址
+      setDefault(address,addressId){  // 设置默认地址
         axios.post('/users/setDefault',{
           addressId:addressId
         }).then((response)=>{
@@ -202,17 +216,31 @@
           if(res.status=='0'){
             console.log("set default success");
 
-            // 通过循环 addressList 数组改变 addressList 数据
-            // this.addressList.forEach((el, index) => {
-            // 	if(item === el) {
-            // 		el.isDefault = true;
+            // 前端通过循环 addressList 数组改变 addressList 数据
+            // let copyAddress;
+            // let copyIndex;
+            // this.addressList.forEach((item, index) => {
+            // 	if(address === item) {
+            // 		item.isDefault = true;
+            //    copyAddress = item;
+            //    copyIndex = index;
             // 	} else {
-            // 		el.isDefault = false;
+            // 		item.isDefault = false;
             // 	}
             // })
+            // 使默认的地址在第一个
+            // this.addressList.splice(copyIndex, 1);
+            // this.addressList.unshift(copyAddress);
+
 
             // 通过从后端ajax请求获取更新后的 addressList 数据，重新渲染地址列表
-            this.init();  
+            this.init();
+            // this.addressList.forEach((item, index) => {
+            //   if(item.isDefault === true) {
+            //     this.checkIndex = index;
+            //   }
+            // })
+            // this.checkIndex = 0;
           }
         })
       },
@@ -223,12 +251,12 @@
         this.isMdShow = true;
         this.addressId = addressId; // 地址id赋值
       },
-      delAddress(){
+      delAddress(){ // 点击确定图标，向后端发送请求
         axios.post("/users/delAddress",{
           addressId:this.addressId
         }).then((response)=>{
             let res = response.data;
-            if(res.status=="0"){
+            if(res.status==="0"){
               console.log("del suc");
               this.isMdShow = false;  // 告诉模态框组件，设置模态框消失
               this.init();  // 重新渲染地址

@@ -20,7 +20,7 @@
           <a href="javascript:void(0)" class="navbar-link" @click="loginModalFlag=true;errorTip=false;" v-if="!nickName">Login</a>
           <a href="javascript:void(0)" class="navbar-link" @click="logOut" v-if="nickName">Logout</a>
           <div class="navbar-cart-container">
-            <span class="navbar-cart-count"></span>
+            <span class="navbar-cart-count" v-if="cartCount>0">{{cartCount}}</span>
             <a class="navbar-link navbar-cart-link" href="javascript:void(0)" @click='routerGoCart'>
               <svg class="navbar-cart-logo">
                 <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#icon-cart"></use>
@@ -66,9 +66,7 @@
 
 
 <script>
-  // import "@/assets/css/base.css";
   import '@/assets/css/login.css'
-  import {constant} from "@/assets/js/constant.js"
   import axios from 'axios'
   import { mapState } from 'vuex'
   export default{
@@ -77,20 +75,39 @@
         userName: '',
         userPwd: '',
         errorTip: false,
-        loginModalFlag: false, // 遮罩层开关
-        nickName: ''
+        loginModalFlag: false // 遮罩层开关
+        // nickName: '' // 用了vuex这个data数据就不用了
       }
     },
     mounted() {
       // 登录校验
       this.checkLogin();
     },
+    computed: {
+      ...mapState(['nickName', 'cartCount'])
+      // nickName() {
+      //   return this.$store.state.nickName;
+      // },
+      // cartCount() {
+      //   return this.$store.state.cartCount;
+      // }
+    },
     methods: {
       checkLogin() {
         axios.get('/users/checkLogin').then( (response) => {
           let res = response.data;
-          if(res.status === constant.RES_OK) {
-            this.nickName = res.result;
+          if(res.status === '0') {
+            this.loginModalFlag = false;
+            // this.nickName = res.result;
+            this.$store.commit('updateUserInfo', res.result);
+            this.getCartCount();  // 查询购物车商品数量
+          } 
+          // 未登录状态下
+          if(res.status === '10001') {
+            if(this.$route.path !== '/goods' || this.$route.path !== '/') {
+              console.log(this.$route.path)
+              this.$router.push('/');
+            }
           }
         })
       },
@@ -106,13 +123,16 @@
           userPwd: this.userPwd
         }).then((response) => {
           let res = response.data;
-          if(res.status === constant.RES_OK) {
+          if(res.status === '0') {
             // 账号密码正确
             console.log('账号密码正确')
             this.errorTip = false;
             this.loginModalFlag = false;
-            this.nickName = res.result.userName;
-            // 如果是 /cart 用户购物车页面，登录之后就获取数据
+            // this.nickName = res.result.userName;
+            this.$store.commit("updateUserInfo",res.result.userName);
+            this.getCartCount();  // 查询购物车商品数量
+
+            // 如果是 /cart 用户购物车页面，登录之后在cart页面通过getData触发init()就获取数据
             this.$emit('getData')
           } else {
             // // 账号密码错误
@@ -126,11 +146,25 @@
         
         axios.post('/users/logout').then((response) => {
           let res = response.data;
-          if(res.status === constant.RES_OK) {
-            this.nickName = '';
+          if(res.status === '0') {
+            // this.nickName = '';
+            this.$store.commit("updateUserInfo",'');
+            // this.$emit('getData');
+            this.getCartCount();  // 查询购物车商品数量
           }
         })
 
+      },
+      getCartCount() {
+        axios.get('/users/getCartCount').then( (response) => {
+          let res = response.data;
+          if(res.status === '0') {
+            this.$store.commit('initCartCount', res.result)
+          }
+          if(res.status === '10001') {
+            this.$store.commit('initCartCount', 0)
+          }
+        })
       },
       routerGoCart() {
         this.$router.push({

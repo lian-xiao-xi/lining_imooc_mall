@@ -1,6 +1,9 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
+import Vuex from 'vuex'
+
+Vue.use(Vuex)
 
 // 使用懒加载插件
 import VueLazyload from 'vue-lazyload'
@@ -18,10 +21,33 @@ Vue.config.productionTip = false
 import {currency} from "@/assets/js/currency.js"
 Vue.filter('currency', currency)
 
+// 状态管理
+const store = new Vuex.Store({
+	state: {
+		nickName: '',
+		cartCount: 0
+	},
+	mutations: {
+		updateUserInfo(state, nickName) {
+			state.nickName = nickName;
+		},
+		updateCartCount(state, cartCount) {
+			state.cartCount += cartCount;
+		},
+		initCartCount(state,cartCount){
+      state.cartCount = cartCount;
+    }
+	}
+})
+
+import "@/assets/css/base.css";
+import "@/assets/css/checkout.css";
+import "@/assets/css/product.css";
 
 /* eslint-disable no-new */
 new Vue({
   el: '#app',
   router,
+  store,
   render: h => h(App)
 })
